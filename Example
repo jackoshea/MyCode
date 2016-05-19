@@ -1,0 +1,100 @@
+using UnityEngine;
+ using System.Collections;
+ 
+ [RequireComponent(typeof(CharacterSystem))]
+ 
+ public class AICharacterController : MonoBehaviour
+ {
+ 
+     public GameObject ObjectTarget;
+     public string TargetTag = "Player";
+     private CharacterSystem character;
+     private int aiTime = 0;
+     private float scanFrequency = 1.0f;
+     private int aiState = 0;
+ 
+     void Start()
+     {
+         character = gameObject.GetComponent<CharacterSystem>();
+         InvokeRepeating("ScanForTarget", 0, scanFrequency);
+     }
+ 
+     void ScanForTarget()
+     {
+         ObjectTarget = GetNearestTaggedObject();
+     }
+ 
+     public GameObject GetNearestTaggedObject()
+     {
+         var nearestDistanceSqr = Mathf.Infinity;
+         GameObject nearestObj = null;
+ 
+         foreach (var obj in GameObject.FindGameObjectsWithTag(TargetTag))
+         {
+ 
+             var objectPos = obj.transform.position;
+             var distanceSqr = (objectPos - transform.position).sqrMagnitude;
+ 
+             if (distanceSqr < nearestDistanceSqr)
+             {
+                 nearestObj = obj;
+                 nearestDistanceSqr = distanceSqr;
+             }
+         }
+         return nearestObj;
+     }
+ 
+     public float DistanceSquaredTo(GameObject source, GameObject target)
+     {
+         return Vector3.SqrMagnitude(source.transform.position - target.transform.position);
+     }
+ 
+     void Update()
+     {
+         //if (GameObject.Find("CharacterDakota").GetComponent<CharacterStatus>().HP > 0) {
+ 
+         if (GameObject.Find("GameManager").GetComponent<GameManager>().Playing)
+         {
+ 
+             var direction = Vector3.zero;
+             if (aiTime <= 0)
+             {
+                 aiState = Random.Range(0, 4);
+                 aiTime = Random.Range(10, 100);
+             }
+             else {
+                 aiTime--;
+             }
+             if (ObjectTarget)
+             {
+                 //ObjectTarget = GameObject.FindGameObjectWithTag(TargetTag);  
+                 float distance = Vector3.Distance(ObjectTarget.transform.position, this.gameObject.transform.position);
+ 
+                 if (distance <= 2)
+                 {
+                     transform.LookAt(ObjectTarget.transform.position);
+                     if (aiTime <= 0)
+                     {
+                         if (aiState == 1)
+                         {
+                             character.Attack();
+                         }
+                     }
+                 }
+                 else {
+                     if (aiState == 1)
+                     {
+                         transform.LookAt(ObjectTarget.transform.position);
+                         direction = this.transform.forward;
+                         direction.Normalize();
+                         character.Move(direction);
+                     }
+                 }
+ 
+             }
+             else {
+                 ScanForTarget();
+             }
+         }
+     }
+ }
